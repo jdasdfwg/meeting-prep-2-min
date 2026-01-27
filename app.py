@@ -17,12 +17,17 @@ app = Flask(__name__)
 
 # Search categories for comprehensive research
 SEARCH_QUERIES = {
-    'company_info': '{company} company overview employees LinkedIn',
+    'company_info': '{company} company overview employees size LinkedIn',
+    'company_info_2': '{company} headquarters founded industry sector',
     'funding': '{company} funding round investment series valuation 2024 2025',
-    'financials': '{company} stock market cap revenue billion',
-    'priorities': '{company} CEO strategy priorities goals 2024 2025',
-    'leadership': '{company} executive leadership team CEO CTO CFO appointed',
-    'news': '{company} news announcement 2024 2025',
+    'financials': '{company} stock market cap revenue billion quarterly earnings',
+    'priorities': '{company} CEO strategy priorities goals initiatives 2024 2025',
+    'priorities_2': '{company} company focus mission vision announcement',
+    'leadership': '{company} executive leadership team CEO CTO CFO appointed hired',
+    'leadership_2': '{company} new executive promotion leadership change 2024 2025',
+    'news': '{company} company news announcement press release 2024 2025',
+    'subsidiaries': '{company} subsidiary parent company owned by acquisition',
+    'subsidiaries_2': '{company} acquired companies acquisitions portfolio brands',
 }
 
 
@@ -126,6 +131,50 @@ def extract_market_cap(text):
     return None
 
 
+def extract_subsidiary_info(text, company_name):
+    """Extract subsidiary/parent company information from text."""
+    info = {'parent': None, 'subsidiaries': []}
+    text_lower = text.lower()
+    company_lower = company_name.lower()
+    
+    # Patterns for parent company
+    parent_patterns = [
+        rf'{company_lower}\s+(?:is\s+)?(?:a\s+)?subsidiary\s+of\s+([A-Z][A-Za-z\s&]+)',
+        rf'{company_lower}\s+(?:is\s+)?owned\s+by\s+([A-Z][A-Za-z\s&]+)',
+        rf'{company_lower}\s+(?:is\s+)?(?:a\s+)?(?:division|unit|part)\s+of\s+([A-Z][A-Za-z\s&]+)',
+        r'parent\s+company[:\s]+([A-Z][A-Za-z\s&]+)',
+        rf'([A-Z][A-Za-z\s&]+)\s+owns?\s+{company_lower}',
+        rf'([A-Z][A-Za-z\s&]+)[\'"]?s?\s+subsidiary[,\s]+{company_lower}',
+    ]
+    
+    for pattern in parent_patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            parent = match.group(1).strip()
+            if len(parent) > 2 and len(parent) < 50 and parent.lower() != company_lower:
+                info['parent'] = parent
+                break
+    
+    # Patterns for subsidiaries
+    subsidiary_patterns = [
+        rf'{company_lower}\s+(?:owns?|acquired|bought)\s+([A-Z][A-Za-z\s&,]+)',
+        rf'subsidiaries?\s+(?:include|of\s+{company_lower})[:\s]+([A-Za-z\s&,]+)',
+        rf'{company_lower}[\'"]?s?\s+(?:subsidiaries?|portfolio|brands?)[:\s]+([A-Za-z\s&,]+)',
+    ]
+    
+    for pattern in subsidiary_patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            subs = match.group(1).strip()
+            # Split by commas and clean up
+            for sub in re.split(r'[,;]', subs):
+                sub = sub.strip()
+                if len(sub) > 2 and len(sub) < 40 and sub.lower() != company_lower:
+                    info['subsidiaries'].append(sub)
+    
+    return info
+
+
 def research_company(company_name):
     """
     Conduct comprehensive research on a company.
@@ -156,6 +205,11 @@ def research_company(company_name):
             'current_leaders': [],
             'sources': []
         },
+        'corporate_structure': {
+            'parent_company': None,
+            'subsidiaries': [],
+            'sources': []
+        },
         'discovery_angles': [],
         'raw_results': {}
     }
@@ -163,9 +217,9 @@ def research_company(company_name):
     # Perform searches for each category
     for category, query_template in SEARCH_QUERIES.items():
         query = query_template.format(company=company_name)
-        results = search_web(query, max_results=8)
+        results = search_web(query, max_results=10)
         research_data['raw_results'][category] = results
-        time.sleep(0.5)  # Rate limiting
+        time.sleep(0.3)  # Rate limiting
         
         # Process results based on category
         for result in results:
@@ -178,7 +232,8 @@ def research_company(company_name):
             if not body and not title:
                 continue
             
-            if category == 'company_info':
+            # Company Info categories
+            if category in ['company_info', 'company_info_2']:
                 # Extract employee count
                 if not research_data['snapshot']['employee_count']:
                     emp_count = extract_employee_count(combined_text)
@@ -189,20 +244,23 @@ def research_company(company_name):
                             'url': url
                         })
                 
-                # Add description from first result with content
-                if len(research_data['snapshot']['sources']) < 3 and body:
+                # Add description - always add content to ensure section is populated
+                if len(research_data['snapshot']['sources']) < 5 and body:
                     if not research_data['snapshot']['description']:
                         research_data['snapshot']['description'] = body[:300]
+                    else:
+                        # Add additional info if we have room
+                        pass
                     research_data['snapshot']['sources'].append({
                         'title': title,
                         'url': url
                     })
                     
+            # Funding category
             elif category == 'funding':
-                # Less strict - include any funding/investment related content
-                if body and len(research_data['financials']['funding_rounds']) < 4:
+                if body and len(research_data['financials']['funding_rounds']) < 5:
                     funding_info = {
-                        'text': body[:200] if body else title,
+                        'text': body[:220] if body else title,
                         'url': url,
                         'title': title
                     }
@@ -212,6 +270,7 @@ def research_company(company_name):
                         'url': url
                     })
                     
+            # Financials category
             elif category == 'financials':
                 market_cap = extract_market_cap(combined_text)
                 if market_cap and not research_data['financials']['market_cap']:
@@ -221,18 +280,18 @@ def research_company(company_name):
                         'url': url
                     })
                 # Also add any financial info
-                elif body and len(research_data['financials']['funding_rounds']) < 4:
+                if body and len(research_data['financials']['funding_rounds']) < 5:
                     research_data['financials']['funding_rounds'].append({
-                        'text': body[:200],
+                        'text': body[:220],
                         'url': url,
                         'title': title
                     })
                     
-            elif category == 'priorities' or category == 'news':
-                # Add relevant priority/news information - less strict filtering
-                if body and len(research_data['priorities']['items']) < 5:
+            # Priorities and news categories
+            elif category in ['priorities', 'priorities_2', 'news']:
+                if body and len(research_data['priorities']['items']) < 6:
                     research_data['priorities']['items'].append({
-                        'text': body[:250] if body else title,
+                        'text': body[:280] if body else title,
                         'url': url,
                         'title': title
                     })
@@ -241,11 +300,11 @@ def research_company(company_name):
                         'url': url
                     })
                     
-            elif category == 'leadership':
-                # Look for leadership info - less strict
-                if body and len(research_data['leadership']['changes']) < 5:
+            # Leadership categories
+            elif category in ['leadership', 'leadership_2']:
+                if body and len(research_data['leadership']['changes']) < 6:
                     research_data['leadership']['changes'].append({
-                        'text': body[:200] if body else title,
+                        'text': body[:220] if body else title,
                         'url': url,
                         'title': title
                     })
@@ -253,6 +312,32 @@ def research_company(company_name):
                         'title': title,
                         'url': url
                     })
+            
+            # Subsidiary categories
+            elif category in ['subsidiaries', 'subsidiaries_2']:
+                # Try to extract subsidiary info
+                sub_info = extract_subsidiary_info(combined_text, company_name)
+                
+                if sub_info['parent'] and not research_data['corporate_structure']['parent_company']:
+                    research_data['corporate_structure']['parent_company'] = sub_info['parent']
+                    research_data['corporate_structure']['sources'].append({
+                        'title': title,
+                        'url': url
+                    })
+                
+                for sub in sub_info['subsidiaries']:
+                    if sub not in research_data['corporate_structure']['subsidiaries']:
+                        research_data['corporate_structure']['subsidiaries'].append(sub)
+                
+                # Also add general corporate structure info
+                if body and len(research_data['corporate_structure']['sources']) < 4:
+                    # Check if text mentions parent/subsidiary relationships
+                    if any(kw in combined_text.lower() for kw in ['subsidiary', 'parent company', 'owned by', 'acquired', 'acquisition', 'division of', 'part of']):
+                        research_data['corporate_structure']['sources'].append({
+                            'title': title,
+                            'url': url,
+                            'text': body[:200]
+                        })
     
     # Generate discovery angles based on research
     research_data['discovery_angles'] = generate_discovery_angles(research_data)
@@ -358,11 +443,29 @@ def format_research_summary(data):
         'sources': data['snapshot']['sources'][:3]
     }
     
+    # Corporate Structure (new section)
+    structure_items = []
+    if data['corporate_structure']['parent_company']:
+        structure_items.append(f"Parent Company: {data['corporate_structure']['parent_company']}")
+    if data['corporate_structure']['subsidiaries']:
+        subs = data['corporate_structure']['subsidiaries'][:5]
+        structure_items.append(f"Subsidiaries/Owned Brands: {', '.join(subs)}")
+    # Add any text snippets about corporate structure
+    for source in data['corporate_structure']['sources'][:2]:
+        if 'text' in source:
+            structure_items.append(source['text'])
+    
+    summary['sections']['corporate_structure'] = {
+        'title': 'Corporate Structure',
+        'items': structure_items,
+        'sources': [s for s in data['corporate_structure']['sources'][:3] if 'url' in s]
+    }
+    
     # Financials
     financial_items = []
     if data['financials']['market_cap']:
         financial_items.append(f"Market Cap: {data['financials']['market_cap']}")
-    for funding in data['financials']['funding_rounds'][:3]:
+    for funding in data['financials']['funding_rounds'][:4]:
         financial_items.append(funding['text'])
     
     summary['sections']['financials'] = {
@@ -372,7 +475,7 @@ def format_research_summary(data):
     }
     
     # What They Care About
-    priority_items = [p['text'] for p in data['priorities']['items'][:4]]
+    priority_items = [p['text'] for p in data['priorities']['items'][:5]]
     summary['sections']['priorities'] = {
         'title': 'What They Care About',
         'items': priority_items,
@@ -380,7 +483,7 @@ def format_research_summary(data):
     }
     
     # Leadership Signals
-    leadership_items = [l['text'] for l in data['leadership']['changes'][:4]]
+    leadership_items = [l['text'] for l in data['leadership']['changes'][:5]]
     summary['sections']['leadership'] = {
         'title': 'Leadership Signals',
         'items': leadership_items,

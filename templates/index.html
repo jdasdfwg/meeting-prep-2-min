@@ -245,6 +245,15 @@
             text-decoration: underline;
         }
 
+        .corporate-structure-section {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(249, 115, 22, 0.1) 100%);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .corporate-structure-section .section-title::before {
+            background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+        }
+
         .discovery-section {
             background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
             border: 1px solid rgba(59, 130, 246, 0.3);
@@ -395,7 +404,7 @@
 
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p>Researching company... This may take 15-30 seconds</p>
+            <p>Researching company... This may take 30-60 seconds for comprehensive results</p>
         </div>
 
         <div class="error" id="error">
@@ -416,6 +425,13 @@
                 <h3 class="section-title">Company Snapshot</h3>
                 <ul class="section-items" id="snapshotItems"></ul>
                 <div class="sources" id="snapshotSources"></div>
+            </div>
+
+            <!-- Corporate Structure -->
+            <div class="section corporate-structure-section" id="corporateStructureSection">
+                <h3 class="section-title">Corporate Structure</h3>
+                <ul class="section-items" id="corporate_structureItems"></ul>
+                <div class="sources" id="corporate_structureSources"></div>
             </div>
 
             <!-- Financials -->
@@ -501,6 +517,9 @@
 
             // Company Snapshot
             renderSection('snapshot', data.sections.company_snapshot);
+
+            // Corporate Structure
+            renderSection('corporate_structure', data.sections.corporate_structure);
 
             // Financials
             renderSection('financials', data.sections.financials);
