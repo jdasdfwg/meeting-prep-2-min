@@ -17,17 +17,18 @@ app = Flask(__name__)
 
 # Search categories for comprehensive research
 SEARCH_QUERIES = {
-    'company_info': '{company} company overview employees size LinkedIn',
-    'company_info_2': '{company} headquarters founded industry sector',
+    'company_overview': '{company} company what does it do business',
+    'company_info': '{company} company overview headquarters founded',
+    'company_size': '{company} company employees headcount size LinkedIn',
+    'company_news': '{company} company latest news 2025 2024',
     'funding': '{company} funding round investment series valuation 2024 2025',
     'financials': '{company} stock market cap revenue billion quarterly earnings',
     'priorities': '{company} CEO strategy priorities goals initiatives 2024 2025',
-    'priorities_2': '{company} company focus mission vision announcement',
-    'leadership': '{company} executive leadership team CEO CTO CFO appointed hired',
-    'leadership_2': '{company} new executive promotion leadership change 2024 2025',
-    'news': '{company} company news announcement press release 2024 2025',
-    'subsidiaries': '{company} subsidiary parent company owned by acquisition',
-    'subsidiaries_2': '{company} acquired companies acquisitions portfolio brands',
+    'priorities_2': '{company} company focus mission announcement 2025',
+    'leadership': '{company} executive leadership team CEO CTO CFO',
+    'leadership_2': '{company} new executive appointed hired promotion 2024 2025',
+    'subsidiaries': '{company} subsidiary parent company owned by',
+    'subsidiaries_2': '{company} acquired companies acquisitions brands portfolio',
 }
 
 
@@ -185,9 +186,11 @@ def research_company(company_name):
         'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M'),
         'snapshot': {
             'employee_count': None,
+            'what_they_do': None,
+            'headquarters': None,
             'industry': None,
-            'sub_industry': None,
-            'description': None,
+            'recent_news': [],
+            'key_facts': [],
             'sources': []
         },
         'financials': {
@@ -232,9 +235,56 @@ def research_company(company_name):
             if not body and not title:
                 continue
             
-            # Company Info categories
-            if category in ['company_info', 'company_info_2']:
+            # Company Overview - what they do
+            if category == 'company_overview':
+                if not research_data['snapshot']['what_they_do'] and body:
+                    # Clean up the description to be concise
+                    desc = body[:200].strip()
+                    if desc:
+                        research_data['snapshot']['what_they_do'] = desc
+                        research_data['snapshot']['sources'].append({
+                            'title': title,
+                            'url': url
+                        })
+            
+            # Company Info - headquarters, founded, industry
+            elif category == 'company_info':
                 # Extract employee count
+                if not research_data['snapshot']['employee_count']:
+                    emp_count = extract_employee_count(combined_text)
+                    if emp_count:
+                        research_data['snapshot']['employee_count'] = emp_count
+                
+                # Extract headquarters
+                if not research_data['snapshot']['headquarters'] and body:
+                    hq_patterns = [
+                        r'headquartered\s+in\s+([A-Za-z\s,]+)',
+                        r'headquarters\s+(?:in|at)\s+([A-Za-z\s,]+)',
+                        r'based\s+in\s+([A-Za-z\s,]+)',
+                        r'HQ[:\s]+([A-Za-z\s,]+)',
+                    ]
+                    for pattern in hq_patterns:
+                        match = re.search(pattern, combined_text, re.IGNORECASE)
+                        if match:
+                            hq = match.group(1).strip()[:50]
+                            if hq and len(hq) > 3:
+                                research_data['snapshot']['headquarters'] = hq
+                                break
+                
+                # Add key facts
+                if body and len(research_data['snapshot']['key_facts']) < 3:
+                    research_data['snapshot']['key_facts'].append({
+                        'text': body[:180],
+                        'url': url,
+                        'title': title
+                    })
+                    research_data['snapshot']['sources'].append({
+                        'title': title,
+                        'url': url
+                    })
+            
+            # Company Size - employee count
+            elif category == 'company_size':
                 if not research_data['snapshot']['employee_count']:
                     emp_count = extract_employee_count(combined_text)
                     if emp_count:
@@ -243,14 +293,15 @@ def research_company(company_name):
                             'title': title,
                             'url': url
                         })
-                
-                # Add description - always add content to ensure section is populated
-                if len(research_data['snapshot']['sources']) < 5 and body:
-                    if not research_data['snapshot']['description']:
-                        research_data['snapshot']['description'] = body[:300]
-                    else:
-                        # Add additional info if we have room
-                        pass
+            
+            # Company News - recent headlines
+            elif category == 'company_news':
+                if body and len(research_data['snapshot']['recent_news']) < 2:
+                    research_data['snapshot']['recent_news'].append({
+                        'text': body[:180],
+                        'url': url,
+                        'title': title
+                    })
                     research_data['snapshot']['sources'].append({
                         'title': title,
                         'url': url
@@ -430,16 +481,40 @@ def format_research_summary(data):
         'sections': {}
     }
     
-    # Company Snapshot
+    # Company Snapshot - 3-5 concise bullet points
     snapshot_items = []
+    
+    # 1. What they do (most important)
+    if data['snapshot']['what_they_do']:
+        snapshot_items.append(data['snapshot']['what_they_do'])
+    
+    # 2. Size and location
+    size_location = []
     if data['snapshot']['employee_count']:
-        snapshot_items.append(f"~{data['snapshot']['employee_count']} employees")
-    if data['snapshot']['description']:
-        snapshot_items.append(data['snapshot']['description'])
+        size_location.append(f"~{data['snapshot']['employee_count']} employees")
+    if data['snapshot']['headquarters']:
+        size_location.append(f"HQ: {data['snapshot']['headquarters']}")
+    if size_location:
+        snapshot_items.append(" | ".join(size_location))
+    
+    # 3. Key facts (add 1-2 if we have them)
+    for fact in data['snapshot']['key_facts'][:2]:
+        if len(snapshot_items) < 4:
+            snapshot_items.append(fact['text'])
+    
+    # 4. Recent news (add 1 headline if we have room)
+    if data['snapshot']['recent_news'] and len(snapshot_items) < 5:
+        news = data['snapshot']['recent_news'][0]
+        snapshot_items.append(f"Recent: {news['text']}")
+    
+    # Ensure we have at least something
+    if not snapshot_items and data['snapshot']['key_facts']:
+        for fact in data['snapshot']['key_facts'][:3]:
+            snapshot_items.append(fact['text'])
     
     summary['sections']['company_snapshot'] = {
         'title': 'Company Snapshot',
-        'items': snapshot_items,
+        'items': snapshot_items[:5],  # Max 5 items
         'sources': data['snapshot']['sources'][:3]
     }
     
