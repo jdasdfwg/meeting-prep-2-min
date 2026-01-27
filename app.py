@@ -381,5 +381,8 @@ def research():
         return jsonify({'error': f'Research failed: {str(e)}'}), 500
 
 
+# For Vercel serverless deployment
+application = app
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
