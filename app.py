@@ -27,25 +27,65 @@ SEARCH_QUERIES = {
 
 
 def search_web(query, max_results=8):
-    """Perform web search using DuckDuckGo."""
+    """Perform web search using DuckDuckGo HTML search (more reliable)."""
+    results = []
+    
+    # Method 1: Try DuckDuckGo HTML search directly
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+        url = f"https://html.duckduckgo.com/html/?q={requests.utils.quote(query)}"
+        response = requests.get(url, headers=headers, timeout=10)
+        
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # Find all result divs
+            for result in soup.select('.result')[:max_results]:
+                title_elem = result.select_one('.result__title')
+                snippet_elem = result.select_one('.result__snippet')
+                link_elem = result.select_one('.result__url')
+                
+                if title_elem:
+                    title = title_elem.get_text(strip=True)
+                    body = snippet_elem.get_text(strip=True) if snippet_elem else ''
+                    href = ''
+                    
+                    # Get the actual URL
+                    a_tag = title_elem.find('a')
+                    if a_tag and a_tag.get('href'):
+                        href = a_tag.get('href')
+                        # DuckDuckGo wraps URLs, extract the actual URL
+                        if 'uddg=' in href:
+                            import urllib.parse
+                            parsed = urllib.parse.parse_qs(urllib.parse.urlparse(href).query)
+                            if 'uddg' in parsed:
+                                href = parsed['uddg'][0]
+                    
+                    results.append({
+                        'title': title,
+                        'body': body,
+                        'href': href
+                    })
+            
+            print(f"HTML search '{query[:40]}...' returned {len(results)} results")
+            if results:
+                return results
+    except Exception as e:
+        print(f"HTML search error: {e}")
+    
+    # Method 2: Fallback to DDGS library
     try:
         ddgs = DDGS()
-        results = []
         for r in ddgs.text(query, max_results=max_results):
             results.append(r)
-        print(f"Search '{query[:50]}...' returned {len(results)} results")
+        print(f"DDGS library search returned {len(results)} results")
         return results
     except Exception as e:
-        print(f"Search error for '{query}': {e}")
-        # Fallback: try with different parameters
-        try:
-            ddgs = DDGS()
-            results = list(ddgs.text(query, region='wt-wt', safesearch='off', max_results=max_results))
-            print(f"Fallback search returned {len(results)} results")
-            return results
-        except Exception as e2:
-            print(f"Fallback search also failed: {e2}")
-            return []
+        print(f"DDGS library error: {e}")
+    
+    return results
 
 
 def extract_employee_count(text):
