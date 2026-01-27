@@ -6,6 +6,7 @@ A lightweight tool to generate company research summaries for sales calls.
 import os
 import re
 import json
+import time
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify
 from duckduckgo_search import DDGS
@@ -16,25 +17,35 @@ app = Flask(__name__)
 
 # Search categories for comprehensive research
 SEARCH_QUERIES = {
-    'company_info': '{company} company overview employees industry',
-    'funding': '{company} funding round investment series valuation',
-    'financials': '{company} revenue market cap financials',
-    'priorities': '{company} company priorities strategy 2024 2025 earnings',
-    'leadership': '{company} CEO CTO CFO leadership executive hire promotion',
-    'news': '{company} company news announcement press release',
-    'linkedin': 'site:linkedin.com {company} company',
+    'company_info': '{company} company overview employees LinkedIn',
+    'funding': '{company} funding round investment series valuation 2024 2025',
+    'financials': '{company} stock market cap revenue billion',
+    'priorities': '{company} CEO strategy priorities goals 2024 2025',
+    'leadership': '{company} executive leadership team CEO CTO CFO appointed',
+    'news': '{company} news announcement 2024 2025',
 }
 
 
-def search_web(query, max_results=5):
+def search_web(query, max_results=8):
     """Perform web search using DuckDuckGo."""
     try:
-        with DDGS() as ddgs:
-            results = list(ddgs.text(query, max_results=max_results))
-            return results
+        ddgs = DDGS()
+        results = []
+        for r in ddgs.text(query, max_results=max_results):
+            results.append(r)
+        print(f"Search '{query[:50]}...' returned {len(results)} results")
+        return results
     except Exception as e:
-        print(f"Search error: {e}")
-        return []
+        print(f"Search error for '{query}': {e}")
+        # Fallback: try with different parameters
+        try:
+            ddgs = DDGS()
+            results = list(ddgs.text(query, region='wt-wt', safesearch='off', max_results=max_results))
+            print(f"Fallback search returned {len(results)} results")
+            return results
+        except Exception as e2:
+            print(f"Fallback search also failed: {e2}")
+            return []
 
 
 def extract_employee_count(text):
@@ -112,15 +123,20 @@ def research_company(company_name):
     # Perform searches for each category
     for category, query_template in SEARCH_QUERIES.items():
         query = query_template.format(company=company_name)
-        results = search_web(query, max_results=5)
+        results = search_web(query, max_results=8)
         research_data['raw_results'][category] = results
+        time.sleep(0.5)  # Rate limiting
         
         # Process results based on category
         for result in results:
             title = result.get('title', '')
             body = result.get('body', '')
-            url = result.get('href', '')
+            url = result.get('href', result.get('link', ''))
             combined_text = f"{title} {body}"
+            
+            # Skip if no useful content
+            if not body and not title:
+                continue
             
             if category == 'company_info':
                 # Extract employee count
@@ -133,13 +149,18 @@ def research_company(company_name):
                             'url': url
                         })
                 
-                # Try to identify industry
-                if not research_data['snapshot']['description'] and body:
-                    research_data['snapshot']['description'] = body[:300]
+                # Add description from first result with content
+                if len(research_data['snapshot']['sources']) < 3 and body:
+                    if not research_data['snapshot']['description']:
+                        research_data['snapshot']['description'] = body[:300]
+                    research_data['snapshot']['sources'].append({
+                        'title': title,
+                        'url': url
+                    })
                     
             elif category == 'funding':
-                amounts, series = extract_funding_info(combined_text)
-                if amounts or series:
+                # Less strict - include any funding/investment related content
+                if body and len(research_data['financials']['funding_rounds']) < 4:
                     funding_info = {
                         'text': body[:200] if body else title,
                         'url': url,
@@ -159,10 +180,17 @@ def research_company(company_name):
                         'title': title,
                         'url': url
                     })
+                # Also add any financial info
+                elif body and len(research_data['financials']['funding_rounds']) < 4:
+                    research_data['financials']['funding_rounds'].append({
+                        'text': body[:200],
+                        'url': url,
+                        'title': title
+                    })
                     
-            elif category == 'priorities':
-                # Add relevant priority information
-                if any(kw in combined_text.lower() for kw in ['priority', 'focus', 'strategy', 'initiative', 'goal', 'plan']):
+            elif category == 'priorities' or category == 'news':
+                # Add relevant priority/news information - less strict filtering
+                if body and len(research_data['priorities']['items']) < 5:
                     research_data['priorities']['items'].append({
                         'text': body[:250] if body else title,
                         'url': url,
@@ -174,9 +202,8 @@ def research_company(company_name):
                     })
                     
             elif category == 'leadership':
-                # Look for leadership changes
-                leadership_keywords = ['ceo', 'cto', 'cfo', 'coo', 'vp', 'president', 'chief', 'hire', 'appoint', 'promote', 'join']
-                if any(kw in combined_text.lower() for kw in leadership_keywords):
+                # Look for leadership info - less strict
+                if body and len(research_data['leadership']['changes']) < 5:
                     research_data['leadership']['changes'].append({
                         'text': body[:200] if body else title,
                         'url': url,
