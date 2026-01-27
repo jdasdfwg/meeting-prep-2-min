@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Call Prep | B2B Sales Research Tool</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            color: #e2e8f0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #f8fafc;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            color: #94a3b8;
+            font-size: 1rem;
+        }
+
+        .search-container {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid #334155;
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .search-form {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            font-size: 1rem;
+            border: 2px solid #334155;
+            border-radius: 12px;
+            background: #0f172a;
+            color: #f8fafc;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        .search-input::placeholder {
+            color: #64748b;
+        }
+
+        .search-btn {
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            white-space: nowrap;
+        }
+
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+        }
+
+        .search-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 3rem;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid #334155;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading p {
+            color: #94a3b8;
+        }
+
+        .results {
+            display: none;
+        }
+
+        .results.active {
+            display: block;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #334155;
+        }
+
+        .company-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #f8fafc;
+        }
+
+        .timestamp {
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+
+        .section {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .section:hover {
+            border-color: #475569;
+        }
+
+        .section-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #94a3b8;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-title::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 16px;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            border-radius: 2px;
+        }
+
+        .section-items {
+            list-style: none;
+        }
+
+        .section-items li {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #1e293b;
+            font-size: 0.95rem;
+            color: #e2e8f0;
+        }
+
+        .section-items li:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .section-items li::before {
+            content: '•';
+            color: #3b82f6;
+            font-weight: bold;
+            display: inline-block;
+            width: 1em;
+            margin-left: -0.5em;
+        }
+
+        .sources {
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid #1e293b;
+        }
+
+        .sources-label {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-bottom: 0.25rem;
+        }
+
+        .source-link {
+            font-size: 0.75rem;
+            color: #60a5fa;
+            text-decoration: none;
+            display: inline-block;
+            margin-right: 1rem;
+            transition: color 0.2s;
+        }
+
+        .source-link:hover {
+            color: #93c5fd;
+            text-decoration: underline;
+        }
+
+        .discovery-section {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .discovery-section .section-title::before {
+            background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+        }
+
+        .discovery-angle {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .discovery-angle:last-child {
+            margin-bottom: 0;
+        }
+
+        .angle-title {
+            font-weight: 600;
+            color: #f8fafc;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .angle-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .angle-suggestion {
+            font-size: 0.9rem;
+            color: #cbd5e1;
+            margin-bottom: 0.75rem;
+        }
+
+        .angle-hook {
+            font-size: 0.875rem;
+            color: #10b981;
+            font-style: italic;
+            background: rgba(16, 185, 129, 0.1);
+            padding: 0.75rem;
+            border-radius: 6px;
+            border-left: 3px solid #10b981;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: #64748b;
+            font-style: italic;
+        }
+
+        .error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            color: #fca5a5;
+            display: none;
+        }
+
+        .error.active {
+            display: block;
+        }
+
+        .print-btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            background: transparent;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .print-btn:hover {
+            background: #334155;
+            color: #f8fafc;
+        }
+
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+            .search-container, .print-btn {
+                display: none;
+            }
+            .section {
+                break-inside: avoid;
+                border: 1px solid #ddd;
+                background: white;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .search-form {
+                flex-direction: column;
+            }
+            .search-btn {
+                width: 100%;
+            }
+            .results-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📞 Call Prep</h1>
+            <p>B2B Sales Research Tool — Get call-ready in under 2 minutes</p>
+        </header>
+
+        <div class="search-container">
+            <form class="search-form" id="searchForm">
+                <input 
+                    type="text" 
+                    class="search-input" 
+                    id="companyInput" 
+                    placeholder="Enter company name (e.g., Stripe, Notion, Figma)"
+                    autocomplete="off"
+                    required
+                >
+                <button type="submit" class="search-btn" id="searchBtn">
+                    Research Company
+                </button>
+            </form>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Researching company... This may take 15-30 seconds</p>
+        </div>
+
+        <div class="error" id="error">
+            <p>Something went wrong. Please try again.</p>
+        </div>
+
+        <div class="results" id="results">
+            <div class="results-header">
+                <div>
+                    <h2 class="company-title" id="companyTitle"></h2>
+                    <span class="timestamp" id="timestamp"></span>
+                </div>
+                <button class="print-btn" onclick="window.print()">Print / Save PDF</button>
+            </div>
+
+            <!-- Company Snapshot -->
+            <div class="section" id="snapshotSection">
+                <h3 class="section-title">Company Snapshot</h3>
+                <ul class="section-items" id="snapshotItems"></ul>
+                <div class="sources" id="snapshotSources"></div>
+            </div>
+
+            <!-- Financials -->
+            <div class="section" id="financialsSection">
+                <h3 class="section-title">Financials & Funding</h3>
+                <ul class="section-items" id="financialsItems"></ul>
+                <div class="sources" id="financialsSources"></div>
+            </div>
+
+            <!-- What They Care About -->
+            <div class="section" id="prioritiesSection">
+                <h3 class="section-title">What They Care About</h3>
+                <ul class="section-items" id="prioritiesItems"></ul>
+                <div class="sources" id="prioritiesSources"></div>
+            </div>
+
+            <!-- Leadership Signals -->
+            <div class="section" id="leadershipSection">
+                <h3 class="section-title">Leadership Signals</h3>
+                <ul class="section-items" id="leadershipItems"></ul>
+                <div class="sources" id="leadershipSources"></div>
+            </div>
+
+            <!-- Discovery Angles -->
+            <div class="section discovery-section" id="discoverySection">
+                <h3 class="section-title">Sales Discovery Angles</h3>
+                <div id="discoveryAngles"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('searchForm');
+        const input = document.getElementById('companyInput');
+        const btn = document.getElementById('searchBtn');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const results = document.getElementById('results');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const companyName = input.value.trim();
+            if (!companyName) return;
+
+            // Reset UI
+            loading.classList.add('active');
+            error.classList.remove('active');
+            results.classList.remove('active');
+            btn.disabled = true;
+            btn.textContent = 'Researching...';
+
+            try {
+                const response = await fetch('/research', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ company_name: companyName }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Research failed');
+                }
+
+                const data = await response.json();
+                displayResults(data);
+
+            } catch (err) {
+                console.error('Error:', err);
+                error.classList.add('active');
+            } finally {
+                loading.classList.remove('active');
+                btn.disabled = false;
+                btn.textContent = 'Research Company';
+            }
+        });
+
+        function displayResults(data) {
+            // Header
+            document.getElementById('companyTitle').textContent = data.company_name;
+            document.getElementById('timestamp').textContent = `Generated: ${data.generated_at}`;
+
+            // Company Snapshot
+            renderSection('snapshot', data.sections.company_snapshot);
+
+            // Financials
+            renderSection('financials', data.sections.financials);
+
+            // Priorities
+            renderSection('priorities', data.sections.priorities);
+
+            // Leadership
+            renderSection('leadership', data.sections.leadership);
+
+            // Discovery Angles
+            renderDiscoveryAngles(data.discovery_angles);
+
+            results.classList.add('active');
+        }
+
+        function renderSection(id, section) {
+            const itemsContainer = document.getElementById(`${id}Items`);
+            const sourcesContainer = document.getElementById(`${id}Sources`);
+
+            // Clear previous content
+            itemsContainer.innerHTML = '';
+            sourcesContainer.innerHTML = '';
+
+            if (!section.items || section.items.length === 0) {
+                itemsContainer.innerHTML = '<li class="empty-state">No data found</li>';
+            } else {
+                section.items.forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = item;
+                    itemsContainer.appendChild(li);
+                });
+            }
+
+            // Render sources
+            if (section.sources && section.sources.length > 0) {
+                const label = document.createElement('div');
+                label.className = 'sources-label';
+                label.textContent = 'Sources:';
+                sourcesContainer.appendChild(label);
+
+                section.sources.forEach(source => {
+                    const link = document.createElement('a');
+                    link.className = 'source-link';
+                    link.href = source.url;
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    link.textContent = truncate(source.title, 40);
+                    sourcesContainer.appendChild(link);
+                });
+            }
+        }
+
+        function renderDiscoveryAngles(angles) {
+            const container = document.getElementById('discoveryAngles');
+            container.innerHTML = '';
+
+            if (!angles || angles.length === 0) {
+                container.innerHTML = '<p class="empty-state">No specific angles identified</p>';
+                return;
+            }
+
+            angles.forEach((angle, index) => {
+                const div = document.createElement('div');
+                div.className = 'discovery-angle';
+                div.innerHTML = `
+                    <div class="angle-title">
+                        <span class="angle-number">${index + 1}</span>
+                        ${angle.title}
+                    </div>
+                    <p class="angle-suggestion">${angle.suggestion}</p>
+                    <div class="angle-hook">${angle.hook}</div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function truncate(str, length) {
+            if (!str) return '';
+            return str.length > length ? str.substring(0, length) + '...' : str;
+        }
+    </script>
+</body>
+</html>
