@@ -408,7 +408,8 @@
 
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p>Researching company... This may take 1-2 minutes for comprehensive results</p>
+            <p id="loadingText">Researching company... This may take 1-2 minutes for comprehensive results</p>
+            <p style="font-size: 0.85rem; color: #64748b; margin-top: 0.5rem;" id="loadingSubtext">Searching all sources to fill every section...</p>
         </div>
 
         <div class="error" id="error">
@@ -475,6 +476,18 @@
         const error = document.getElementById('error');
         const results = document.getElementById('results');
 
+        // Loading text animation
+        const loadingMessages = [
+            'Searching company overview...',
+            'Finding corporate structure...',
+            'Gathering financial data...',
+            'Analyzing company priorities...',
+            'Researching leadership team...',
+            'Compiling comprehensive results...',
+            'Almost done - finalizing report...'
+        ];
+        let loadingInterval;
+
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -487,6 +500,14 @@
             results.classList.remove('active');
             btn.disabled = true;
             btn.textContent = 'Researching...';
+
+            // Animate loading text
+            let msgIndex = 0;
+            const loadingSubtext = document.getElementById('loadingSubtext');
+            loadingInterval = setInterval(() => {
+                loadingSubtext.textContent = loadingMessages[msgIndex % loadingMessages.length];
+                msgIndex++;
+            }, 8000);
 
             try {
                 const response = await fetch('/research', {
@@ -502,22 +523,46 @@
                 }
 
                 const data = await response.json();
-                displayResults(data);
+                
+                // Check if all sections have data
+                const allFilled = checkAllSectionsFilled(data);
+                if (allFilled) {
+                    displayResults(data);
+                } else {
+                    // Display anyway but log warning
+                    console.log('Some sections may be incomplete');
+                    displayResults(data);
+                }
 
             } catch (err) {
                 console.error('Error:', err);
                 error.classList.add('active');
             } finally {
+                clearInterval(loadingInterval);
                 loading.classList.remove('active');
                 btn.disabled = false;
                 btn.textContent = 'Research Company';
             }
         });
 
+        function checkAllSectionsFilled(data) {
+            const sections = ['company_snapshot', 'corporate_structure', 'financials', 'priorities', 'leadership'];
+            for (const section of sections) {
+                if (!data.sections[section] || !data.sections[section].items || data.sections[section].items.length === 0) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         function displayResults(data) {
             // Header
             document.getElementById('companyTitle').textContent = data.company_name;
-            document.getElementById('timestamp').textContent = `Generated: ${data.generated_at}`;
+            
+            // Check completion status
+            const allFilled = checkAllSectionsFilled(data);
+            const statusText = allFilled ? '✓ Complete' : 'Partial';
+            document.getElementById('timestamp').textContent = `Generated: ${data.generated_at} | ${statusText}`;
 
             // Company Snapshot
             renderSection('snapshot', data.sections.company_snapshot);
@@ -538,6 +583,9 @@
             renderDiscoveryAngles(data.discovery_angles);
 
             results.classList.add('active');
+            
+            // Scroll to results
+            results.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         function renderSection(id, section) {

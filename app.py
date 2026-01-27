@@ -15,32 +15,53 @@ from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 
-# Search categories for comprehensive research
-SEARCH_QUERIES = [
-    # Company Snapshot queries
-    ('snapshot', '{company} company about what do they do'),
-    ('snapshot', '{company} Wikipedia company overview'),
-    ('snapshot', '{company} company employees headquarters location'),
-    
-    # Corporate Structure queries  
-    ('structure', '{company} parent company subsidiary owned by'),
-    ('structure', '{company} acquisitions acquired companies brands'),
-    
-    # Financials queries
-    ('financials', '{company} funding round series investment valuation'),
-    ('financials', '{company} revenue market cap stock price financials'),
-    ('financials', '{company} quarterly earnings annual report'),
-    
-    # Priorities/Strategy queries
-    ('priorities', '{company} CEO strategy priorities 2024 2025'),
-    ('priorities', '{company} company goals initiatives focus areas'),
-    ('priorities', '{company} recent announcements plans expansion'),
-    
-    # Leadership queries
-    ('leadership', '{company} CEO CTO CFO executive team leadership'),
-    ('leadership', '{company} new hire executive appointed 2024 2025'),
-    ('leadership', '{company} leadership changes management team'),
-]
+# Search queries organized by section - multiple variations to ensure results
+SEARCH_QUERIES_BY_SECTION = {
+    'snapshot': [
+        '{company} company about overview',
+        '{company} company what do they do business',
+        '{company} Wikipedia',
+        '{company} company profile description',
+        '{company} company history founded',
+        '{company} Inc company information',
+        '{company} headquarters employees size',
+        '{company} company industry sector',
+    ],
+    'structure': [
+        '{company} parent company subsidiary',
+        '{company} owned by acquisition',
+        '{company} company subsidiaries divisions',
+        '{company} acquired by merger',
+        '{company} corporate structure ownership',
+        '{company} brands portfolio companies',
+    ],
+    'financials': [
+        '{company} funding round investment',
+        '{company} revenue financials earnings',
+        '{company} market cap stock price',
+        '{company} valuation billion million',
+        '{company} quarterly results annual report',
+        '{company} financial performance 2024',
+        '{company} IPO stock ticker',
+    ],
+    'priorities': [
+        '{company} CEO strategy priorities',
+        '{company} company goals initiatives 2024 2025',
+        '{company} focus areas plans',
+        '{company} news announcements recent',
+        '{company} company strategy direction',
+        '{company} growth plans expansion',
+        '{company} company mission vision',
+    ],
+    'leadership': [
+        '{company} CEO CTO CFO executives',
+        '{company} leadership team management',
+        '{company} executive appointed hired 2024',
+        '{company} new CEO leadership changes',
+        '{company} board directors officers',
+        '{company} founder CEO chief executive',
+    ],
+}
 
 
 def search_web(query, max_results=8):
@@ -187,126 +208,141 @@ def extract_subsidiary_info(text, company_name):
     return info
 
 
+def check_sections_complete(data, min_items=2):
+    """Check if all sections have minimum required items."""
+    sections = ['snapshot', 'corporate_structure', 'financials', 'priorities', 'leadership']
+    incomplete = []
+    for section in sections:
+        key = section if section != 'corporate_structure' else 'corporate_structure'
+        if len(data[key]['items']) < min_items:
+            incomplete.append(section)
+    return incomplete
+
+
+def add_result_to_section(data, section, result):
+    """Add a search result to the appropriate section."""
+    title = result.get('title', '')
+    body = result.get('body', '')
+    url = result.get('href', result.get('link', ''))
+    
+    if not body or len(body.strip()) < 20:
+        return False
+    
+    clean_body = body.strip()
+    
+    # Check for duplicates
+    existing_texts = [item['text'][:100] for item in data[section]['items']]
+    if clean_body[:100] in existing_texts:
+        return False
+    
+    # Extract employee count from any result
+    if not data.get('employee_count'):
+        emp_count = extract_employee_count(f"{title} {body}")
+        if emp_count:
+            data['employee_count'] = emp_count
+    
+    data[section]['items'].append({
+        'text': clean_body,
+        'title': title,
+        'url': url
+    })
+    data[section]['sources'].append({'title': title, 'url': url})
+    return True
+
+
 def research_company(company_name):
     """
     Conduct comprehensive research on a company.
-    Returns structured data for the call-prep summary.
+    Keeps searching until ALL sections have data.
     """
     research_data = {
         'company_name': company_name,
         'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M'),
-        'snapshot': {
-            'items': [],
-            'sources': []
-        },
-        'financials': {
-            'items': [],
-            'sources': []
-        },
-        'priorities': {
-            'items': [],
-            'sources': []
-        },
-        'leadership': {
-            'items': [],
-            'sources': []
-        },
-        'corporate_structure': {
-            'items': [],
-            'sources': []
-        },
+        'snapshot': {'items': [], 'sources': []},
+        'financials': {'items': [], 'sources': []},
+        'priorities': {'items': [], 'sources': []},
+        'leadership': {'items': [], 'sources': []},
+        'corporate_structure': {'items': [], 'sources': []},
         'discovery_angles': [],
         'employee_count': None
+    }
+    
+    section_key_map = {
+        'snapshot': 'snapshot',
+        'structure': 'corporate_structure',
+        'financials': 'financials',
+        'priorities': 'priorities',
+        'leadership': 'leadership',
     }
     
     print(f"\n{'='*50}")
     print(f"Researching: {company_name}")
     print(f"{'='*50}")
     
-    # Perform all searches
-    for category, query_template in SEARCH_QUERIES:
-        query = query_template.format(company=company_name)
-        results = search_web(query, max_results=8)
-        time.sleep(0.5)  # Rate limiting to avoid blocks
+    max_rounds = 3  # Maximum search rounds
+    min_items_per_section = 2  # Minimum items needed per section
+    
+    for round_num in range(max_rounds):
+        print(f"\n--- Round {round_num + 1} ---")
         
-        # Process each result
-        for result in results:
-            title = result.get('title', '')
-            body = result.get('body', '')
-            url = result.get('href', result.get('link', ''))
-            combined_text = f"{title} {body}"
+        # Check which sections need more data
+        for section_name, queries in SEARCH_QUERIES_BY_SECTION.items():
+            data_key = section_key_map[section_name]
             
-            if not body:
+            # Skip if section already has enough items
+            if len(research_data[data_key]['items']) >= min_items_per_section + round_num:
                 continue
             
-            # Clean up the text
-            clean_body = body.strip()
-            if len(clean_body) < 20:
-                continue
-            
-            # Extract employee count from any result
-            if not research_data['employee_count']:
-                emp_count = extract_employee_count(combined_text)
-                if emp_count:
-                    research_data['employee_count'] = emp_count
-            
-            # Map to appropriate section
-            if category == 'snapshot':
-                if len(research_data['snapshot']['items']) < 5:
-                    research_data['snapshot']['items'].append({
-                        'text': clean_body,
-                        'title': title,
-                        'url': url
-                    })
-                    research_data['snapshot']['sources'].append({'title': title, 'url': url})
-                    
-            elif category == 'structure':
-                if len(research_data['corporate_structure']['items']) < 4:
-                    research_data['corporate_structure']['items'].append({
-                        'text': clean_body,
-                        'title': title,
-                        'url': url
-                    })
-                    research_data['corporate_structure']['sources'].append({'title': title, 'url': url})
-                    
-            elif category == 'financials':
-                if len(research_data['financials']['items']) < 5:
-                    research_data['financials']['items'].append({
-                        'text': clean_body,
-                        'title': title,
-                        'url': url
-                    })
-                    research_data['financials']['sources'].append({'title': title, 'url': url})
-                    
-            elif category == 'priorities':
-                if len(research_data['priorities']['items']) < 5:
-                    research_data['priorities']['items'].append({
-                        'text': clean_body,
-                        'title': title,
-                        'url': url
-                    })
-                    research_data['priorities']['sources'].append({'title': title, 'url': url})
-                    
-            elif category == 'leadership':
-                if len(research_data['leadership']['items']) < 5:
-                    research_data['leadership']['items'].append({
-                        'text': clean_body,
-                        'title': title,
-                        'url': url
-                    })
-                    research_data['leadership']['sources'].append({'title': title, 'url': url})
+            # Try queries for this section
+            for query_template in queries:
+                # Skip if we have enough now
+                if len(research_data[data_key]['items']) >= min_items_per_section + round_num:
+                    break
+                
+                query = query_template.format(company=company_name)
+                results = search_web(query, max_results=10)
+                time.sleep(0.4)  # Rate limiting
+                
+                # Add results to section
+                for result in results:
+                    if len(research_data[data_key]['items']) >= 5:
+                        break
+                    add_result_to_section(research_data, data_key, result)
+        
+        # Check if all sections are complete
+        incomplete = check_sections_complete(research_data, min_items_per_section)
+        
+        print(f"After round {round_num + 1}:")
+        print(f"  Snapshot: {len(research_data['snapshot']['items'])} items")
+        print(f"  Structure: {len(research_data['corporate_structure']['items'])} items")
+        print(f"  Financials: {len(research_data['financials']['items'])} items")
+        print(f"  Priorities: {len(research_data['priorities']['items'])} items")
+        print(f"  Leadership: {len(research_data['leadership']['items'])} items")
+        
+        if not incomplete:
+            print(f"\nAll sections complete!")
+            break
+        else:
+            print(f"Incomplete sections: {incomplete}")
     
-    # Log what we found
-    print(f"\nResults found:")
-    print(f"  Snapshot: {len(research_data['snapshot']['items'])} items")
-    print(f"  Structure: {len(research_data['corporate_structure']['items'])} items")
-    print(f"  Financials: {len(research_data['financials']['items'])} items")
-    print(f"  Priorities: {len(research_data['priorities']['items'])} items")
-    print(f"  Leadership: {len(research_data['leadership']['items'])} items")
-    print(f"  Employee count: {research_data['employee_count']}")
+    # Final pass - use general search if any section still empty
+    for section_name, data_key in section_key_map.items():
+        if len(research_data[data_key]['items']) == 0:
+            print(f"Final attempt for {section_name}...")
+            query = f"{company_name} company {section_name} information"
+            results = search_web(query, max_results=10)
+            for result in results:
+                if len(research_data[data_key]['items']) >= 3:
+                    break
+                add_result_to_section(research_data, data_key, result)
+            time.sleep(0.3)
     
-    # Generate discovery angles based on research
+    # Generate discovery angles
     research_data['discovery_angles'] = generate_discovery_angles(research_data)
+    
+    print(f"\n{'='*50}")
+    print(f"Research complete for: {company_name}")
+    print(f"{'='*50}")
     
     return research_data
 
