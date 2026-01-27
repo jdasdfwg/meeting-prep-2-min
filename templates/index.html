@@ -200,9 +200,14 @@
 
         .section-items li {
             padding: 0.75rem 0;
+            padding-left: 1.2em;
             border-bottom: 1px solid #1e293b;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             color: #e2e8f0;
+            line-height: 1.5;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            position: relative;
         }
 
         .section-items li:last-child {
@@ -214,9 +219,8 @@
             content: '•';
             color: #3b82f6;
             font-weight: bold;
-            display: inline-block;
-            width: 1em;
-            margin-left: -0.5em;
+            position: absolute;
+            left: 0;
         }
 
         .sources {
@@ -404,7 +408,7 @@
 
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p>Researching company... This may take 30-60 seconds for comprehensive results</p>
+            <p>Researching company... This may take 1-2 minutes for comprehensive results</p>
         </div>
 
         <div class="error" id="error">

@@ -16,20 +16,31 @@ from bs4 import BeautifulSoup
 app = Flask(__name__)
 
 # Search categories for comprehensive research
-SEARCH_QUERIES = {
-    'company_overview': '{company} company what does it do business',
-    'company_info': '{company} company overview headquarters founded',
-    'company_size': '{company} company employees headcount size LinkedIn',
-    'company_news': '{company} company latest news 2025 2024',
-    'funding': '{company} funding round investment series valuation 2024 2025',
-    'financials': '{company} stock market cap revenue billion quarterly earnings',
-    'priorities': '{company} CEO strategy priorities goals initiatives 2024 2025',
-    'priorities_2': '{company} company focus mission announcement 2025',
-    'leadership': '{company} executive leadership team CEO CTO CFO',
-    'leadership_2': '{company} new executive appointed hired promotion 2024 2025',
-    'subsidiaries': '{company} subsidiary parent company owned by',
-    'subsidiaries_2': '{company} acquired companies acquisitions brands portfolio',
-}
+SEARCH_QUERIES = [
+    # Company Snapshot queries
+    ('snapshot', '{company} company about what do they do'),
+    ('snapshot', '{company} Wikipedia company overview'),
+    ('snapshot', '{company} company employees headquarters location'),
+    
+    # Corporate Structure queries  
+    ('structure', '{company} parent company subsidiary owned by'),
+    ('structure', '{company} acquisitions acquired companies brands'),
+    
+    # Financials queries
+    ('financials', '{company} funding round series investment valuation'),
+    ('financials', '{company} revenue market cap stock price financials'),
+    ('financials', '{company} quarterly earnings annual report'),
+    
+    # Priorities/Strategy queries
+    ('priorities', '{company} CEO strategy priorities 2024 2025'),
+    ('priorities', '{company} company goals initiatives focus areas'),
+    ('priorities', '{company} recent announcements plans expansion'),
+    
+    # Leadership queries
+    ('leadership', '{company} CEO CTO CFO executive team leadership'),
+    ('leadership', '{company} new hire executive appointed 2024 2025'),
+    ('leadership', '{company} leadership changes management team'),
+]
 
 
 def search_web(query, max_results=8):
@@ -185,18 +196,11 @@ def research_company(company_name):
         'company_name': company_name,
         'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M'),
         'snapshot': {
-            'employee_count': None,
-            'what_they_do': None,
-            'headquarters': None,
-            'industry': None,
-            'recent_news': [],
-            'key_facts': [],
+            'items': [],
             'sources': []
         },
         'financials': {
-            'funding_rounds': [],
-            'market_cap': None,
-            'valuation': None,
+            'items': [],
             'sources': []
         },
         'priorities': {
@@ -204,191 +208,102 @@ def research_company(company_name):
             'sources': []
         },
         'leadership': {
-            'changes': [],
-            'current_leaders': [],
+            'items': [],
             'sources': []
         },
         'corporate_structure': {
-            'parent_company': None,
-            'subsidiaries': [],
+            'items': [],
             'sources': []
         },
         'discovery_angles': [],
-        'raw_results': {}
+        'employee_count': None
     }
     
-    # Perform searches for each category
-    for category, query_template in SEARCH_QUERIES.items():
+    print(f"\n{'='*50}")
+    print(f"Researching: {company_name}")
+    print(f"{'='*50}")
+    
+    # Perform all searches
+    for category, query_template in SEARCH_QUERIES:
         query = query_template.format(company=company_name)
-        results = search_web(query, max_results=10)
-        research_data['raw_results'][category] = results
-        time.sleep(0.3)  # Rate limiting
+        results = search_web(query, max_results=8)
+        time.sleep(0.5)  # Rate limiting to avoid blocks
         
-        # Process results based on category
+        # Process each result
         for result in results:
             title = result.get('title', '')
             body = result.get('body', '')
             url = result.get('href', result.get('link', ''))
             combined_text = f"{title} {body}"
             
-            # Skip if no useful content
-            if not body and not title:
+            if not body:
                 continue
             
-            # Company Overview - what they do
-            if category == 'company_overview':
-                if not research_data['snapshot']['what_they_do'] and body:
-                    # Clean up the description to be concise
-                    desc = body[:200].strip()
-                    if desc:
-                        research_data['snapshot']['what_they_do'] = desc
-                        research_data['snapshot']['sources'].append({
-                            'title': title,
-                            'url': url
-                        })
+            # Clean up the text
+            clean_body = body.strip()
+            if len(clean_body) < 20:
+                continue
             
-            # Company Info - headquarters, founded, industry
-            elif category == 'company_info':
-                # Extract employee count
-                if not research_data['snapshot']['employee_count']:
-                    emp_count = extract_employee_count(combined_text)
-                    if emp_count:
-                        research_data['snapshot']['employee_count'] = emp_count
-                
-                # Extract headquarters
-                if not research_data['snapshot']['headquarters'] and body:
-                    hq_patterns = [
-                        r'headquartered\s+in\s+([A-Za-z\s,]+)',
-                        r'headquarters\s+(?:in|at)\s+([A-Za-z\s,]+)',
-                        r'based\s+in\s+([A-Za-z\s,]+)',
-                        r'HQ[:\s]+([A-Za-z\s,]+)',
-                    ]
-                    for pattern in hq_patterns:
-                        match = re.search(pattern, combined_text, re.IGNORECASE)
-                        if match:
-                            hq = match.group(1).strip()[:50]
-                            if hq and len(hq) > 3:
-                                research_data['snapshot']['headquarters'] = hq
-                                break
-                
-                # Add key facts
-                if body and len(research_data['snapshot']['key_facts']) < 3:
-                    research_data['snapshot']['key_facts'].append({
-                        'text': body[:180],
-                        'url': url,
-                        'title': title
-                    })
-                    research_data['snapshot']['sources'].append({
+            # Extract employee count from any result
+            if not research_data['employee_count']:
+                emp_count = extract_employee_count(combined_text)
+                if emp_count:
+                    research_data['employee_count'] = emp_count
+            
+            # Map to appropriate section
+            if category == 'snapshot':
+                if len(research_data['snapshot']['items']) < 5:
+                    research_data['snapshot']['items'].append({
+                        'text': clean_body,
                         'title': title,
                         'url': url
                     })
-            
-            # Company Size - employee count
-            elif category == 'company_size':
-                if not research_data['snapshot']['employee_count']:
-                    emp_count = extract_employee_count(combined_text)
-                    if emp_count:
-                        research_data['snapshot']['employee_count'] = emp_count
-                        research_data['snapshot']['sources'].append({
-                            'title': title,
-                            'url': url
-                        })
-            
-            # Company News - recent headlines
-            elif category == 'company_news':
-                if body and len(research_data['snapshot']['recent_news']) < 2:
-                    research_data['snapshot']['recent_news'].append({
-                        'text': body[:180],
-                        'url': url,
-                        'title': title
-                    })
-                    research_data['snapshot']['sources'].append({
-                        'title': title,
-                        'url': url
-                    })
+                    research_data['snapshot']['sources'].append({'title': title, 'url': url})
                     
-            # Funding category
-            elif category == 'funding':
-                if body and len(research_data['financials']['funding_rounds']) < 5:
-                    funding_info = {
-                        'text': body[:220] if body else title,
-                        'url': url,
-                        'title': title
-                    }
-                    research_data['financials']['funding_rounds'].append(funding_info)
-                    research_data['financials']['sources'].append({
+            elif category == 'structure':
+                if len(research_data['corporate_structure']['items']) < 4:
+                    research_data['corporate_structure']['items'].append({
+                        'text': clean_body,
                         'title': title,
                         'url': url
                     })
+                    research_data['corporate_structure']['sources'].append({'title': title, 'url': url})
                     
-            # Financials category
             elif category == 'financials':
-                market_cap = extract_market_cap(combined_text)
-                if market_cap and not research_data['financials']['market_cap']:
-                    research_data['financials']['market_cap'] = market_cap
-                    research_data['financials']['sources'].append({
+                if len(research_data['financials']['items']) < 5:
+                    research_data['financials']['items'].append({
+                        'text': clean_body,
                         'title': title,
                         'url': url
                     })
-                # Also add any financial info
-                if body and len(research_data['financials']['funding_rounds']) < 5:
-                    research_data['financials']['funding_rounds'].append({
-                        'text': body[:220],
-                        'url': url,
-                        'title': title
-                    })
+                    research_data['financials']['sources'].append({'title': title, 'url': url})
                     
-            # Priorities and news categories
-            elif category in ['priorities', 'priorities_2', 'news']:
-                if body and len(research_data['priorities']['items']) < 6:
+            elif category == 'priorities':
+                if len(research_data['priorities']['items']) < 5:
                     research_data['priorities']['items'].append({
-                        'text': body[:280] if body else title,
-                        'url': url,
-                        'title': title
-                    })
-                    research_data['priorities']['sources'].append({
+                        'text': clean_body,
                         'title': title,
                         'url': url
                     })
+                    research_data['priorities']['sources'].append({'title': title, 'url': url})
                     
-            # Leadership categories
-            elif category in ['leadership', 'leadership_2']:
-                if body and len(research_data['leadership']['changes']) < 6:
-                    research_data['leadership']['changes'].append({
-                        'text': body[:220] if body else title,
-                        'url': url,
-                        'title': title
-                    })
-                    research_data['leadership']['sources'].append({
+            elif category == 'leadership':
+                if len(research_data['leadership']['items']) < 5:
+                    research_data['leadership']['items'].append({
+                        'text': clean_body,
                         'title': title,
                         'url': url
                     })
-            
-            # Subsidiary categories
-            elif category in ['subsidiaries', 'subsidiaries_2']:
-                # Try to extract subsidiary info
-                sub_info = extract_subsidiary_info(combined_text, company_name)
-                
-                if sub_info['parent'] and not research_data['corporate_structure']['parent_company']:
-                    research_data['corporate_structure']['parent_company'] = sub_info['parent']
-                    research_data['corporate_structure']['sources'].append({
-                        'title': title,
-                        'url': url
-                    })
-                
-                for sub in sub_info['subsidiaries']:
-                    if sub not in research_data['corporate_structure']['subsidiaries']:
-                        research_data['corporate_structure']['subsidiaries'].append(sub)
-                
-                # Also add general corporate structure info
-                if body and len(research_data['corporate_structure']['sources']) < 4:
-                    # Check if text mentions parent/subsidiary relationships
-                    if any(kw in combined_text.lower() for kw in ['subsidiary', 'parent company', 'owned by', 'acquired', 'acquisition', 'division of', 'part of']):
-                        research_data['corporate_structure']['sources'].append({
-                            'title': title,
-                            'url': url,
-                            'text': body[:200]
-                        })
+                    research_data['leadership']['sources'].append({'title': title, 'url': url})
+    
+    # Log what we found
+    print(f"\nResults found:")
+    print(f"  Snapshot: {len(research_data['snapshot']['items'])} items")
+    print(f"  Structure: {len(research_data['corporate_structure']['items'])} items")
+    print(f"  Financials: {len(research_data['financials']['items'])} items")
+    print(f"  Priorities: {len(research_data['priorities']['items'])} items")
+    print(f"  Leadership: {len(research_data['leadership']['items'])} items")
+    print(f"  Employee count: {research_data['employee_count']}")
     
     # Generate discovery angles based on research
     research_data['discovery_angles'] = generate_discovery_angles(research_data)
@@ -401,76 +316,107 @@ def generate_discovery_angles(data):
     angles = []
     
     # Angle based on company size/growth
-    emp_count = data['snapshot'].get('employee_count')
+    emp_count = data.get('employee_count')
     if emp_count:
-        emp_num = int(emp_count.replace(',', ''))
-        if emp_num < 50:
-            angles.append({
-                'title': 'Early-Stage Growth Focus',
-                'suggestion': 'As a growing team, they likely need scalable solutions. Ask about their infrastructure challenges and what\'s slowing them down as they scale.',
-                'hook': '"As you grow from [X] to [2X] employees, what processes are you finding hardest to scale?"'
-            })
-        elif emp_num < 500:
-            angles.append({
-                'title': 'Mid-Market Efficiency',
-                'suggestion': 'Mid-sized companies often struggle with tool sprawl and process standardization. Explore consolidation opportunities.',
-                'hook': '"Many companies at your stage tell us they have 3-4 tools doing the same thing. Is that something you\'re seeing?"'
-            })
-        else:
-            angles.append({
-                'title': 'Enterprise Optimization',
-                'suggestion': 'Large organizations focus on efficiency gains and cost optimization. Lead with ROI and enterprise-grade capabilities.',
-                'hook': '"What would a 10% efficiency improvement in [their key area] mean for your annual targets?"'
-            })
+        try:
+            emp_num = int(str(emp_count).replace(',', ''))
+            if emp_num < 50:
+                angles.append({
+                    'title': 'Early-Stage Growth Focus',
+                    'suggestion': 'As a growing team, they likely need scalable solutions. Ask about their infrastructure challenges.',
+                    'hook': '"As you grow from [X] to [2X] employees, what processes are you finding hardest to scale?"'
+                })
+            elif emp_num < 500:
+                angles.append({
+                    'title': 'Mid-Market Efficiency',
+                    'suggestion': 'Mid-sized companies often struggle with tool sprawl. Explore consolidation opportunities.',
+                    'hook': '"Many companies at your stage tell us they have 3-4 tools doing the same thing. Is that something you\'re seeing?"'
+                })
+            else:
+                angles.append({
+                    'title': 'Enterprise Optimization',
+                    'suggestion': 'Large organizations focus on efficiency gains and cost optimization. Lead with ROI.',
+                    'hook': '"What would a 10% efficiency improvement in [their key area] mean for your annual targets?"'
+                })
+        except:
+            pass
     
-    # Angle based on funding
-    if data['financials']['funding_rounds']:
+    # Angle based on funding/financials
+    if data['financials']['items']:
         angles.append({
-            'title': 'Post-Funding Priorities',
-            'suggestion': 'Recently funded companies are in growth mode with capital to deploy. Connect your solution to their stated growth objectives.',
-            'hook': '"After your recent funding, what\'s the #1 area you\'re investing in to hit your growth targets?"'
+            'title': 'Financial Health & Investment',
+            'suggestion': 'Companies with recent funding or strong financials have capital to deploy. Connect your solution to growth objectives.',
+            'hook': '"What\'s the #1 area you\'re investing in to hit your growth targets this year?"'
         })
     
-    # Angle based on leadership changes
-    if data['leadership']['changes']:
+    # Angle based on leadership
+    if data['leadership']['items']:
         angles.append({
-            'title': 'New Leadership Agenda',
-            'suggestion': 'New executives typically bring fresh initiatives and are open to new vendors. They want quick wins to establish credibility.',
-            'hook': '"I noticed [Name] recently joined as [Title]. What priorities has the new leadership been focusing on?"'
+            'title': 'Leadership Priorities',
+            'suggestion': 'Executives set the strategic direction. Reference leadership initiatives to align your pitch.',
+            'hook': '"What priorities has leadership been focusing on recently?"'
         })
     
     # Angle based on stated priorities
     if data['priorities']['items']:
         angles.append({
             'title': 'Aligned with Stated Strategy',
-            'suggestion': 'Reference their publicly stated priorities to show you\'ve done your homework and align your pitch accordingly.',
-            'hook': '"I read about your focus on [specific initiative]. How is that progressing, and what\'s been the biggest challenge?"'
+            'suggestion': 'Reference their publicly stated priorities to show you\'ve done your homework.',
+            'hook': '"I read about your focus on [specific initiative]. How is that progressing?"'
         })
     
-    # Default angle if we don't have enough specific data
-    if len(angles) < 3:
-        default_angles = [
-            {
-                'title': 'Competitive Landscape',
-                'suggestion': 'Understand their competitive pressures and how they\'re differentiating.',
-                'hook': '"What\'s the one thing your competitors are doing that keeps you up at night?"'
-            },
-            {
-                'title': 'Current Pain Points',
-                'suggestion': 'Focus on understanding their day-to-day operational challenges.',
-                'hook': '"If you could wave a magic wand and fix one thing about [relevant area], what would it be?"'
-            },
-            {
-                'title': 'Decision-Making Process',
-                'suggestion': 'Understand how they evaluate and adopt new solutions.',
-                'hook': '"When you\'ve brought in new [type of solution] before, what made the difference between success and failure?"'
-            }
-        ]
-        for angle in default_angles:
-            if len(angles) < 3:
-                angles.append(angle)
+    # Default angles to ensure we always have 3
+    default_angles = [
+        {
+            'title': 'Competitive Landscape',
+            'suggestion': 'Understand their competitive pressures and how they\'re differentiating.',
+            'hook': '"What\'s the one thing your competitors are doing that keeps you up at night?"'
+        },
+        {
+            'title': 'Current Pain Points',
+            'suggestion': 'Focus on understanding their day-to-day operational challenges.',
+            'hook': '"If you could wave a magic wand and fix one thing about [relevant area], what would it be?"'
+        },
+        {
+            'title': 'Decision-Making Process',
+            'suggestion': 'Understand how they evaluate and adopt new solutions.',
+            'hook': '"When you\'ve brought in new solutions before, what made the difference between success and failure?"'
+        }
+    ]
+    
+    for angle in default_angles:
+        if len(angles) < 3:
+            angles.append(angle)
     
     return angles[:3]
+
+
+def format_text(text, max_length=300):
+    """Format text to be clean and readable, not cut off mid-word."""
+    if not text:
+        return ""
+    
+    # Clean up the text
+    text = text.strip()
+    text = re.sub(r'\s+', ' ', text)  # Normalize whitespace
+    
+    if len(text) <= max_length:
+        return text
+    
+    # Find a good breaking point (end of sentence or word)
+    truncated = text[:max_length]
+    
+    # Try to break at sentence end
+    last_period = truncated.rfind('. ')
+    if last_period > max_length * 0.6:
+        return truncated[:last_period + 1]
+    
+    # Otherwise break at word boundary
+    last_space = truncated.rfind(' ')
+    if last_space > max_length * 0.7:
+        return truncated[:last_space] + "..."
+    
+    return truncated + "..."
 
 
 def format_research_summary(data):
@@ -484,84 +430,71 @@ def format_research_summary(data):
     # Company Snapshot - 3-5 concise bullet points
     snapshot_items = []
     
-    # 1. What they do (most important)
-    if data['snapshot']['what_they_do']:
-        snapshot_items.append(data['snapshot']['what_they_do'])
+    # Add employee count if found
+    if data.get('employee_count'):
+        snapshot_items.append(f"Approximately {data['employee_count']} employees")
     
-    # 2. Size and location
-    size_location = []
-    if data['snapshot']['employee_count']:
-        size_location.append(f"~{data['snapshot']['employee_count']} employees")
-    if data['snapshot']['headquarters']:
-        size_location.append(f"HQ: {data['snapshot']['headquarters']}")
-    if size_location:
-        snapshot_items.append(" | ".join(size_location))
-    
-    # 3. Key facts (add 1-2 if we have them)
-    for fact in data['snapshot']['key_facts'][:2]:
-        if len(snapshot_items) < 4:
-            snapshot_items.append(fact['text'])
-    
-    # 4. Recent news (add 1 headline if we have room)
-    if data['snapshot']['recent_news'] and len(snapshot_items) < 5:
-        news = data['snapshot']['recent_news'][0]
-        snapshot_items.append(f"Recent: {news['text']}")
-    
-    # Ensure we have at least something
-    if not snapshot_items and data['snapshot']['key_facts']:
-        for fact in data['snapshot']['key_facts'][:3]:
-            snapshot_items.append(fact['text'])
+    # Add items from snapshot search
+    for item in data['snapshot']['items'][:4]:
+        formatted = format_text(item['text'], 280)
+        if formatted and formatted not in snapshot_items:
+            snapshot_items.append(formatted)
     
     summary['sections']['company_snapshot'] = {
         'title': 'Company Snapshot',
-        'items': snapshot_items[:5],  # Max 5 items
+        'items': snapshot_items[:5],
         'sources': data['snapshot']['sources'][:3]
     }
     
-    # Corporate Structure (new section)
+    # Corporate Structure
     structure_items = []
-    if data['corporate_structure']['parent_company']:
-        structure_items.append(f"Parent Company: {data['corporate_structure']['parent_company']}")
-    if data['corporate_structure']['subsidiaries']:
-        subs = data['corporate_structure']['subsidiaries'][:5]
-        structure_items.append(f"Subsidiaries/Owned Brands: {', '.join(subs)}")
-    # Add any text snippets about corporate structure
-    for source in data['corporate_structure']['sources'][:2]:
-        if 'text' in source:
-            structure_items.append(source['text'])
+    for item in data['corporate_structure']['items'][:4]:
+        formatted = format_text(item['text'], 280)
+        if formatted:
+            structure_items.append(formatted)
     
     summary['sections']['corporate_structure'] = {
         'title': 'Corporate Structure',
-        'items': structure_items,
-        'sources': [s for s in data['corporate_structure']['sources'][:3] if 'url' in s]
+        'items': structure_items[:4],
+        'sources': data['corporate_structure']['sources'][:3]
     }
     
     # Financials
     financial_items = []
-    if data['financials']['market_cap']:
-        financial_items.append(f"Market Cap: {data['financials']['market_cap']}")
-    for funding in data['financials']['funding_rounds'][:4]:
-        financial_items.append(funding['text'])
+    for item in data['financials']['items'][:4]:
+        formatted = format_text(item['text'], 280)
+        if formatted:
+            financial_items.append(formatted)
     
     summary['sections']['financials'] = {
         'title': 'Financials & Funding',
-        'items': financial_items,
+        'items': financial_items[:4],
         'sources': data['financials']['sources'][:3]
     }
     
-    # What They Care About
-    priority_items = [p['text'] for p in data['priorities']['items'][:5]]
+    # What They Care About (Priorities)
+    priority_items = []
+    for item in data['priorities']['items'][:4]:
+        formatted = format_text(item['text'], 300)
+        if formatted:
+            priority_items.append(formatted)
+    
     summary['sections']['priorities'] = {
         'title': 'What They Care About',
-        'items': priority_items,
+        'items': priority_items[:4],
         'sources': data['priorities']['sources'][:3]
     }
     
     # Leadership Signals
-    leadership_items = [l['text'] for l in data['leadership']['changes'][:5]]
+    leadership_items = []
+    for item in data['leadership']['items'][:4]:
+        formatted = format_text(item['text'], 280)
+        if formatted:
+            leadership_items.append(formatted)
+    
     summary['sections']['leadership'] = {
         'title': 'Leadership Signals',
-        'items': leadership_items,
+        'items': leadership_items[:4],
         'sources': data['leadership']['sources'][:3]
     }
     
