@@ -3,11 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Call Prep | B2B Sales Research Tool</title>
+    <title>Call Prep | B2B Sales Research</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f7f6f3;
+            --bg-hover: #efefef;
+            --text-primary: #37352f;
+            --text-secondary: #6b6b6b;
+            --text-tertiary: #9b9a97;
+            --border-color: #e9e9e7;
+            --accent-blue: #2383e2;
+            --accent-blue-light: #e8f4fd;
+            --accent-orange: #d9730d;
+            --accent-orange-light: #fdebd0;
+            --accent-green: #0f7b6c;
+            --accent-green-light: #dbeddb;
+            --accent-purple: #6940a5;
+            --accent-purple-light: #ebe4f4;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --radius-sm: 4px;
+            --radius-md: 6px;
+            --radius-lg: 8px;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -15,87 +38,115 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            font-family: 'Inter', ui-sans-serif, -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-secondary);
             min-height: 100vh;
-            color: #e2e8f0;
+            color: var(--text-primary);
             line-height: 1.6;
+            font-size: 15px;
+            -webkit-font-smoothing: antialiased;
         }
 
         .container {
-            max-width: 900px;
+            max-width: 860px;
             margin: 0 auto;
-            padding: 2rem;
+            padding: 48px 24px;
         }
 
+        /* Header */
         header {
-            text-align: center;
-            margin-bottom: 2rem;
+            margin-bottom: 32px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--text-primary);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
         }
 
         header h1 {
-            font-size: 2rem;
+            font-size: 28px;
             font-weight: 700;
-            color: #f8fafc;
-            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
         }
 
         header p {
-            color: #94a3b8;
-            font-size: 1rem;
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-top: 4px;
         }
 
+        /* Search */
         .search-container {
-            background: rgba(30, 41, 59, 0.8);
-            border: 1px solid #334155;
-            border-radius: 16px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            backdrop-filter: blur(10px);
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-sm);
         }
 
         .search-form {
             display: flex;
-            gap: 1rem;
+            gap: 12px;
         }
 
         .search-input {
             flex: 1;
-            padding: 1rem 1.5rem;
-            font-size: 1rem;
-            border: 2px solid #334155;
-            border-radius: 12px;
-            background: #0f172a;
-            color: #f8fafc;
+            padding: 10px 14px;
+            font-size: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background: var(--bg-primary);
+            color: var(--text-primary);
             outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            font-family: inherit;
         }
 
         .search-input:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px var(--accent-blue-light);
         }
 
         .search-input::placeholder {
-            color: #64748b;
+            color: var(--text-tertiary);
         }
 
         .search-btn {
-            padding: 1rem 2rem;
-            font-size: 1rem;
-            font-weight: 600;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 500;
             border: none;
-            border-radius: 12px;
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            border-radius: var(--radius-md);
+            background: var(--accent-blue);
             color: white;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: background 0.15s, transform 0.1s;
+            font-family: inherit;
             white-space: nowrap;
         }
 
         .search-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+            background: #1a73d4;
+        }
+
+        .search-btn:active {
+            transform: scale(0.98);
         }
 
         .search-btn:disabled {
@@ -104,10 +155,14 @@
             transform: none;
         }
 
+        /* Loading */
         .loading {
             display: none;
             text-align: center;
-            padding: 3rem;
+            padding: 60px 20px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
         }
 
         .loading.active {
@@ -115,13 +170,13 @@
         }
 
         .spinner {
-            width: 48px;
-            height: 48px;
-            border: 4px solid #334155;
-            border-top-color: #3b82f6;
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--accent-blue);
             border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 1rem;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
         }
 
         @keyframes spin {
@@ -129,9 +184,17 @@
         }
 
         .loading p {
-            color: #94a3b8;
+            color: var(--text-secondary);
+            font-size: 14px;
         }
 
+        .loading-subtext {
+            font-size: 13px !important;
+            color: var(--text-tertiary) !important;
+            margin-top: 6px;
+        }
+
+        /* Results */
         .results {
             display: none;
         }
@@ -143,55 +206,89 @@
         .results-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid #334155;
+            align-items: flex-start;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .company-title {
-            font-size: 1.5rem;
+            font-size: 32px;
             font-weight: 700;
-            color: #f8fafc;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
         }
 
         .timestamp {
-            font-size: 0.875rem;
-            color: #64748b;
+            font-size: 12px;
+            color: var(--text-tertiary);
+            margin-top: 4px;
         }
 
+        .status-complete {
+            color: var(--accent-green);
+        }
+
+        .print-btn {
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 500;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background: var(--bg-primary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .print-btn:hover {
+            background: var(--bg-hover);
+            border-color: #d0d0d0;
+        }
+
+        /* Sections */
         .section {
-            background: rgba(30, 41, 59, 0.6);
-            border: 1px solid #334155;
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            transition: border-color 0.2s;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            margin-bottom: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
         }
 
-        .section:hover {
-            border-color: #475569;
+        .section-header {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-secondary);
         }
 
         .section-title {
-            font-size: 0.875rem;
+            font-size: 12px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #94a3b8;
-            margin-bottom: 1rem;
+            letter-spacing: 0.04em;
+            color: var(--text-secondary);
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 8px;
         }
 
-        .section-title::before {
-            content: '';
-            display: inline-block;
-            width: 4px;
-            height: 16px;
-            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-            border-radius: 2px;
+        .section-icon {
+            width: 18px;
+            height: 18px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+        }
+
+        .section-content {
+            padding: 16px 18px;
         }
 
         .section-items {
@@ -199,14 +296,12 @@
         }
 
         .section-items li {
-            padding: 0.75rem 0;
-            padding-left: 1.2em;
-            border-bottom: 1px solid #1e293b;
-            font-size: 0.9rem;
-            color: #e2e8f0;
-            line-height: 1.5;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
+            padding: 10px 0;
+            padding-left: 20px;
+            border-bottom: 1px solid var(--bg-secondary);
+            font-size: 14px;
+            color: var(--text-primary);
+            line-height: 1.6;
             position: relative;
         }
 
@@ -216,119 +311,147 @@
         }
 
         .section-items li::before {
-            content: '•';
-            color: #3b82f6;
-            font-weight: bold;
+            content: '';
             position: absolute;
             left: 0;
+            top: 16px;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--text-tertiary);
         }
 
+        .empty-state {
+            text-align: center;
+            padding: 24px;
+            color: var(--text-tertiary);
+            font-size: 14px;
+            font-style: italic;
+        }
+
+        /* Sources */
         .sources {
-            margin-top: 0.75rem;
-            padding-top: 0.75rem;
-            border-top: 1px solid #1e293b;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--bg-secondary);
         }
 
         .sources-label {
-            font-size: 0.75rem;
-            color: #64748b;
-            margin-bottom: 0.25rem;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            margin-bottom: 6px;
         }
 
         .source-link {
-            font-size: 0.75rem;
-            color: #60a5fa;
+            font-size: 12px;
+            color: var(--accent-blue);
             text-decoration: none;
             display: inline-block;
-            margin-right: 1rem;
-            transition: color 0.2s;
+            margin-right: 16px;
+            margin-bottom: 4px;
         }
 
         .source-link:hover {
-            color: #93c5fd;
             text-decoration: underline;
         }
 
-        .corporate-structure-section {
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(249, 115, 22, 0.1) 100%);
-            border: 1px solid rgba(245, 158, 11, 0.3);
-        }
+        /* Section Variants */
+        .section-snapshot .section-icon { background: var(--accent-blue-light); color: var(--accent-blue); }
+        .section-structure .section-icon { background: var(--accent-orange-light); color: var(--accent-orange); }
+        .section-financials .section-icon { background: var(--accent-green-light); color: var(--accent-green); }
+        .section-priorities .section-icon { background: var(--accent-purple-light); color: var(--accent-purple); }
+        .section-leadership .section-icon { background: #fce8f3; color: #c026a3; }
 
-        .corporate-structure-section .section-title::before {
-            background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
-        }
+        .section-snapshot .section-items li::before { background: var(--accent-blue); }
+        .section-structure .section-items li::before { background: var(--accent-orange); }
+        .section-financials .section-items li::before { background: var(--accent-green); }
+        .section-priorities .section-items li::before { background: var(--accent-purple); }
+        .section-leadership .section-items li::before { background: #c026a3; }
 
+        /* Discovery Section */
         .discovery-section {
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
-            border: 1px solid rgba(59, 130, 246, 0.3);
+            background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+            border: 1px solid var(--border-color);
         }
 
-        .discovery-section .section-title::before {
-            background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+        .discovery-section .section-header {
+            background: transparent;
+            border-bottom-color: var(--border-color);
+        }
+
+        .discovery-section .section-icon {
+            background: var(--text-primary);
+            color: white;
         }
 
         .discovery-angle {
-            background: rgba(15, 23, 42, 0.5);
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 0.75rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin-bottom: 10px;
         }
 
         .discovery-angle:last-child {
             margin-bottom: 0;
         }
 
-        .angle-title {
-            font-weight: 600;
-            color: #f8fafc;
-            margin-bottom: 0.5rem;
+        .angle-header {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 10px;
+            margin-bottom: 10px;
         }
 
         .angle-number {
-            display: inline-flex;
+            width: 22px;
+            height: 22px;
+            background: var(--text-primary);
+            color: white;
+            border-radius: var(--radius-sm);
+            display: flex;
             align-items: center;
             justify-content: center;
-            width: 24px;
-            height: 24px;
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 700;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .angle-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-primary);
         }
 
         .angle-suggestion {
-            font-size: 0.9rem;
-            color: #cbd5e1;
-            margin-bottom: 0.75rem;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            line-height: 1.5;
         }
 
         .angle-hook {
-            font-size: 0.875rem;
-            color: #10b981;
+            font-size: 13px;
+            color: var(--accent-green);
+            background: var(--accent-green-light);
+            padding: 12px 14px;
+            border-radius: var(--radius-md);
+            border-left: 3px solid var(--accent-green);
             font-style: italic;
-            background: rgba(16, 185, 129, 0.1);
-            padding: 0.75rem;
-            border-radius: 6px;
-            border-left: 3px solid #10b981;
+            line-height: 1.5;
         }
 
-        .empty-state {
-            text-align: center;
-            padding: 2rem;
-            color: #64748b;
-            font-style: italic;
-        }
-
+        /* Error */
         .error {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            border-radius: 12px;
-            padding: 1.5rem;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: var(--radius-lg);
+            padding: 20px;
             text-align: center;
-            color: #fca5a5;
+            color: #dc2626;
+            font-size: 14px;
             display: none;
         }
 
@@ -336,39 +459,28 @@
             display: block;
         }
 
-        .print-btn {
-            padding: 0.5rem 1rem;
-            font-size: 0.875rem;
-            font-weight: 500;
-            border: 1px solid #334155;
-            border-radius: 8px;
-            background: transparent;
-            color: #94a3b8;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .print-btn:hover {
-            background: #334155;
-            color: #f8fafc;
-        }
-
+        /* Print Styles */
         @media print {
             body {
                 background: white;
-                color: black;
             }
             .search-container, .print-btn {
                 display: none;
             }
+            .container {
+                padding: 20px;
+            }
             .section {
                 break-inside: avoid;
-                border: 1px solid #ddd;
-                background: white;
+                box-shadow: none;
             }
         }
 
+        /* Responsive */
         @media (max-width: 640px) {
+            .container {
+                padding: 24px 16px;
+            }
             .search-form {
                 flex-direction: column;
             }
@@ -377,8 +489,10 @@
             }
             .results-header {
                 flex-direction: column;
-                align-items: flex-start;
-                gap: 0.5rem;
+                gap: 12px;
+            }
+            .company-title {
+                font-size: 24px;
             }
         }
     </style>
@@ -386,8 +500,11 @@
 <body>
     <div class="container">
         <header>
-            <h1>📞 Call Prep</h1>
-            <p>B2B Sales Research Tool — Get call-ready in under 2 minutes</p>
+            <div class="logo">
+                <div class="logo-icon">📞</div>
+                <h1>Call Prep</h1>
+            </div>
+            <p>Research any company in seconds. Get call-ready with structured insights.</p>
         </header>
 
         <div class="search-container">
@@ -396,20 +513,20 @@
                     type="text" 
                     class="search-input" 
                     id="companyInput" 
-                    placeholder="Enter company name (e.g., Stripe, Notion, Figma)"
+                    placeholder="Enter a company name..."
                     autocomplete="off"
                     required
                 >
                 <button type="submit" class="search-btn" id="searchBtn">
-                    Research Company
+                    Research
                 </button>
             </form>
         </div>
 
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p id="loadingText">Researching company... This may take 1-2 minutes for comprehensive results</p>
-            <p style="font-size: 0.85rem; color: #64748b; margin-top: 0.5rem;" id="loadingSubtext">Searching all sources to fill every section...</p>
+            <p id="loadingText">Researching company...</p>
+            <p class="loading-subtext" id="loadingSubtext">This may take 1-2 minutes for comprehensive results</p>
         </div>
 
         <div class="error" id="error">
@@ -422,48 +539,95 @@
                     <h2 class="company-title" id="companyTitle"></h2>
                     <span class="timestamp" id="timestamp"></span>
                 </div>
-                <button class="print-btn" onclick="window.print()">Print / Save PDF</button>
+                <button class="print-btn" onclick="window.print()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"/>
+                    </svg>
+                    Export PDF
+                </button>
             </div>
 
             <!-- Company Snapshot -->
-            <div class="section" id="snapshotSection">
-                <h3 class="section-title">Company Snapshot</h3>
-                <ul class="section-items" id="snapshotItems"></ul>
-                <div class="sources" id="snapshotSources"></div>
+            <div class="section section-snapshot" id="snapshotSection">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <span class="section-icon">📋</span>
+                        Company Snapshot
+                    </h3>
+                </div>
+                <div class="section-content">
+                    <ul class="section-items" id="snapshotItems"></ul>
+                    <div class="sources" id="snapshotSources"></div>
+                </div>
             </div>
 
             <!-- Corporate Structure -->
-            <div class="section corporate-structure-section" id="corporateStructureSection">
-                <h3 class="section-title">Corporate Structure</h3>
-                <ul class="section-items" id="corporate_structureItems"></ul>
-                <div class="sources" id="corporate_structureSources"></div>
+            <div class="section section-structure" id="corporateStructureSection">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <span class="section-icon">🏢</span>
+                        Corporate Structure
+                    </h3>
+                </div>
+                <div class="section-content">
+                    <ul class="section-items" id="corporate_structureItems"></ul>
+                    <div class="sources" id="corporate_structureSources"></div>
+                </div>
             </div>
 
             <!-- Financials -->
-            <div class="section" id="financialsSection">
-                <h3 class="section-title">Financials & Funding</h3>
-                <ul class="section-items" id="financialsItems"></ul>
-                <div class="sources" id="financialsSources"></div>
+            <div class="section section-financials" id="financialsSection">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <span class="section-icon">💰</span>
+                        Financials & Funding
+                    </h3>
+                </div>
+                <div class="section-content">
+                    <ul class="section-items" id="financialsItems"></ul>
+                    <div class="sources" id="financialsSources"></div>
+                </div>
             </div>
 
             <!-- What They Care About -->
-            <div class="section" id="prioritiesSection">
-                <h3 class="section-title">What They Care About</h3>
-                <ul class="section-items" id="prioritiesItems"></ul>
-                <div class="sources" id="prioritiesSources"></div>
+            <div class="section section-priorities" id="prioritiesSection">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <span class="section-icon">🎯</span>
+                        What They Care About
+                    </h3>
+                </div>
+                <div class="section-content">
+                    <ul class="section-items" id="prioritiesItems"></ul>
+                    <div class="sources" id="prioritiesSources"></div>
+                </div>
             </div>
 
             <!-- Leadership Signals -->
-            <div class="section" id="leadershipSection">
-                <h3 class="section-title">Leadership Signals</h3>
-                <ul class="section-items" id="leadershipItems"></ul>
-                <div class="sources" id="leadershipSources"></div>
+            <div class="section section-leadership" id="leadershipSection">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <span class="section-icon">👥</span>
+                        Leadership Signals
+                    </h3>
+                </div>
+                <div class="section-content">
+                    <ul class="section-items" id="leadershipItems"></ul>
+                    <div class="sources" id="leadershipSources"></div>
+                </div>
             </div>
 
             <!-- Discovery Angles -->
             <div class="section discovery-section" id="discoverySection">
-                <h3 class="section-title">Sales Discovery Angles</h3>
-                <div id="discoveryAngles"></div>
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <span class="section-icon">💡</span>
+                        Sales Discovery Angles
+                    </h3>
+                </div>
+                <div class="section-content">
+                    <div id="discoveryAngles"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -484,7 +648,7 @@
             'Analyzing company priorities...',
             'Researching leadership team...',
             'Compiling comprehensive results...',
-            'Almost done - finalizing report...'
+            'Almost done — finalizing report...'
         ];
         let loadingInterval;
 
@@ -541,7 +705,7 @@
                 clearInterval(loadingInterval);
                 loading.classList.remove('active');
                 btn.disabled = false;
-                btn.textContent = 'Research Company';
+                btn.textContent = 'Research';
             }
         });
 
@@ -561,8 +725,8 @@
             
             // Check completion status
             const allFilled = checkAllSectionsFilled(data);
-            const statusText = allFilled ? '✓ Complete' : 'Partial';
-            document.getElementById('timestamp').textContent = `Generated: ${data.generated_at} | ${statusText}`;
+            const statusText = allFilled ? '<span class="status-complete">✓ Complete</span>' : 'Partial';
+            document.getElementById('timestamp').innerHTML = `Generated: ${data.generated_at} · ${statusText}`;
 
             // Company Snapshot
             renderSection('snapshot', data.sections.company_snapshot);
@@ -610,7 +774,7 @@
             if (section.sources && section.sources.length > 0) {
                 const label = document.createElement('div');
                 label.className = 'sources-label';
-                label.textContent = 'Sources:';
+                label.textContent = 'Sources';
                 sourcesContainer.appendChild(label);
 
                 section.sources.forEach(source => {
@@ -619,7 +783,7 @@
                     link.href = source.url;
                     link.target = '_blank';
                     link.rel = 'noopener noreferrer';
-                    link.textContent = truncate(source.title, 40);
+                    link.textContent = truncate(source.title, 50);
                     sourcesContainer.appendChild(link);
                 });
             }
@@ -638,9 +802,9 @@
                 const div = document.createElement('div');
                 div.className = 'discovery-angle';
                 div.innerHTML = `
-                    <div class="angle-title">
+                    <div class="angle-header">
                         <span class="angle-number">${index + 1}</span>
-                        ${angle.title}
+                        <span class="angle-title">${angle.title}</span>
                     </div>
                     <p class="angle-suggestion">${angle.suggestion}</p>
                     <div class="angle-hook">${angle.hook}</div>
