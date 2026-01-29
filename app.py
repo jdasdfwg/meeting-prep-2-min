@@ -219,6 +219,63 @@ def check_sections_complete(data, min_items=2):
     return incomplete
 
 
+def is_irrelevant_result(title, body, url):
+    """Filter out irrelevant results that aren't useful for B2B sales prep."""
+    text = f"{title} {body}".lower()
+    url_lower = url.lower() if url else ''
+    
+    # Investment/trading platform spam
+    investment_spam = [
+        'invest in hundreds of',
+        'buy shares in',
+        'private market with ease',
+        'late-stage private companies',
+        'invest in private companies',
+        'buy and sell shares',
+        'secondary market',
+        'pre-ipo shares',
+        'pre-ipo stock',
+        'accredited investor',
+        'minimum investment',
+        'invest in startups',
+        'equity crowdfunding',
+        'private equity investment opportunity',
+    ]
+    
+    # Spam domains
+    spam_domains = [
+        'equityzen', 'forge', 'sharespost', 'equitybee', 'carta.com/equity',
+        'stockanalysis', 'marketwatch.com/investing', 'fool.com/investing',
+        'seekingalpha', 'tipranks', 'zacks.com', 'investopedia',
+        'glassdoor.com/salaries', 'glassdoor.com/reviews', 'indeed.com/jobs',
+        'linkedin.com/jobs', 'salary.com', 'payscale.com', 'levels.fyi',
+    ]
+    
+    # Job posting indicators (not useful for sales prep)
+    job_spam = [
+        'apply now', 'job opening', 'we are hiring', 'join our team',
+        'career opportunities', 'open positions', 'job description',
+        'salary range', 'compensation package', 'benefits include',
+    ]
+    
+    # Check for investment spam
+    for phrase in investment_spam:
+        if phrase in text:
+            return True
+    
+    # Check for spam domains
+    for domain in spam_domains:
+        if domain in url_lower:
+            return True
+    
+    # Check for job spam
+    for phrase in job_spam:
+        if phrase in text:
+            return True
+    
+    return False
+
+
 def add_result_to_section(data, section, result):
     """Add a search result to the appropriate section."""
     title = result.get('title', '')
@@ -226,6 +283,10 @@ def add_result_to_section(data, section, result):
     url = result.get('href', result.get('link', ''))
     
     if not body or len(body.strip()) < 20:
+        return False
+    
+    # Filter out irrelevant results
+    if is_irrelevant_result(title, body, url):
         return False
     
     clean_body = body.strip()
