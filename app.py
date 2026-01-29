@@ -427,78 +427,97 @@ def generate_discovery_angles(data):
     return angles[:3]
 
 
-def format_text(text, max_length=300):
-    """Format text to be clean and readable, not cut off mid-word."""
+def format_text(text, max_length=500):
+    """Format text to be clean and readable - complete sentences only, no cutoff."""
     if not text:
         return ""
     
     # Clean up the text
     text = text.strip()
     text = re.sub(r'\s+', ' ', text)  # Normalize whitespace
+    text = re.sub(r'\s*\.\.\.\s*$', '', text)  # Remove trailing ellipsis
+    text = re.sub(r'\s*…\s*$', '', text)  # Remove unicode ellipsis
     
+    # If short enough, return as-is (ensure ends properly)
     if len(text) <= max_length:
+        # Make sure it ends with proper punctuation
+        if text and text[-1] not in '.!?':
+            text = text.rstrip(',;:') + '.'
         return text
     
-    # Find a good breaking point (end of sentence or word)
+    # For longer text, find the last complete sentence within limit
     truncated = text[:max_length]
     
-    # Try to break at sentence end
-    last_period = truncated.rfind('. ')
-    if last_period > max_length * 0.6:
-        return truncated[:last_period + 1]
+    # Find last sentence ending
+    last_period = max(truncated.rfind('. '), truncated.rfind('? '), truncated.rfind('! '))
     
-    # Otherwise break at word boundary
+    if last_period > max_length * 0.5:
+        return truncated[:last_period + 1].strip()
+    
+    # If no good sentence break, find last period
+    last_period = truncated.rfind('.')
+    if last_period > max_length * 0.4:
+        return truncated[:last_period + 1].strip()
+    
+    # Last resort: break at word boundary and add period
     last_space = truncated.rfind(' ')
-    if last_space > max_length * 0.7:
-        return truncated[:last_space] + "..."
+    if last_space > max_length * 0.6:
+        result = truncated[:last_space].rstrip(',;:')
+        if result and result[-1] not in '.!?':
+            result += '.'
+        return result
     
-    return truncated + "..."
+    # Just return what we have, properly ended
+    result = truncated.rstrip(',;:')
+    if result and result[-1] not in '.!?':
+        result += '.'
+    return result
 
 
 def format_research_summary(data):
-    """Format research data into a clean, skimmable summary."""
+    """Format research data into a clean, skimmable summary - readable in under 2 minutes."""
     summary = {
         'company_name': data['company_name'],
         'generated_at': data['timestamp'],
         'sections': {}
     }
     
-    # Company Snapshot - 3-5 concise bullet points
+    # Company Snapshot - 3-4 complete, informative bullets
     snapshot_items = []
     
     # Add employee count if found
     if data.get('employee_count'):
-        snapshot_items.append(f"Approximately {data['employee_count']} employees")
+        snapshot_items.append(f"Approximately {data['employee_count']} employees.")
     
-    # Add items from snapshot search
+    # Add items from snapshot search - full sentences, no cutoff
     for item in data['snapshot']['items'][:4]:
-        formatted = format_text(item['text'], 280)
+        formatted = format_text(item['text'], 450)
         if formatted and formatted not in snapshot_items:
             snapshot_items.append(formatted)
     
     summary['sections']['company_snapshot'] = {
         'title': 'Company Snapshot',
-        'items': snapshot_items[:5],
+        'items': snapshot_items[:4],
         'sources': data['snapshot']['sources'][:3]
     }
     
-    # Corporate Structure
+    # Corporate Structure - parent/subsidiary relationships
     structure_items = []
-    for item in data['corporate_structure']['items'][:4]:
-        formatted = format_text(item['text'], 280)
+    for item in data['corporate_structure']['items'][:3]:
+        formatted = format_text(item['text'], 400)
         if formatted:
             structure_items.append(formatted)
     
     summary['sections']['corporate_structure'] = {
         'title': 'Corporate Structure',
-        'items': structure_items[:4],
+        'items': structure_items[:3],
         'sources': data['corporate_structure']['sources'][:3]
     }
     
-    # Financials
+    # Financials - funding, revenue, market cap
     financial_items = []
     for item in data['financials']['items'][:4]:
-        formatted = format_text(item['text'], 280)
+        formatted = format_text(item['text'], 450)
         if formatted:
             financial_items.append(formatted)
     
@@ -508,10 +527,10 @@ def format_research_summary(data):
         'sources': data['financials']['sources'][:3]
     }
     
-    # What They Care About (Priorities)
+    # What They Care About (Priorities) - recent news, strategy, initiatives
     priority_items = []
     for item in data['priorities']['items'][:4]:
-        formatted = format_text(item['text'], 300)
+        formatted = format_text(item['text'], 450)
         if formatted:
             priority_items.append(formatted)
     
@@ -521,10 +540,10 @@ def format_research_summary(data):
         'sources': data['priorities']['sources'][:3]
     }
     
-    # Leadership Signals
+    # Leadership Signals - executives, changes, appointments
     leadership_items = []
     for item in data['leadership']['items'][:4]:
-        formatted = format_text(item['text'], 280)
+        formatted = format_text(item['text'], 450)
         if formatted:
             leadership_items.append(formatted)
     
